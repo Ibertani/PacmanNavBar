@@ -1,0 +1,808 @@
+<html>
+
+<head>
+  <link rel="stylesheet" href="navbar.css">
+  </link>
+</head>
+
+<body id="body" onload="resize_window()" style="margin-top:0px; margin-left:0px;">
+
+  <svg id="pacman" xmlns="http://www.w3.org/2000/svg">
+
+    <!-- < svg id="maze" xmlns="http://www.w3.org/2000/svg" width="500" height="300">-->
+
+    <!-- Example of the same polyline shape with stroke and no fill -->
+
+    <!--polyline
+        points="30,20, 50,20, 50,10, 20,10, 20,25,10, 25, 10,100, 50, 100, 50,90, 20, 90, 20, 70, 30, 70, 30, 80, 50, 80, 50, 60, 40, 60, 40, 70,
+                40, 60, 20, 60, 20, 50, 30, 50, 30, 40, 35, 40, 35, 50, 50,50, 50, 20, 43,20, 43, 30, 23, 30, 23, 40, 20, 40    "
+        fill="none" stroke="blue" /-->
+
+    <!-- <polyline points="0,0,0,300,500,300,500,0,0,0" fill="none" stroke="blue">-->
+
+
+  </svg>
+
+</body>
+
+<script>
+  const svg = document.getElementById("pacman");
+  var svgheight, svgwidth; //gobals - sorry
+  //document.documentElement.clientWidth gives the width without scrollbar
+
+  // variable for the namespace
+  const svgns = "http://www.w3.org/2000/svg";
+
+  var svgElem = svg;
+  var cx = 200;
+  var cy = 200;
+
+  var rx = 20;
+  var ry = 20;
+  var arcParams = [];
+  var fourthParamhalf1 = 0;
+  var fifthParamhalf1 = 0;
+  var fourthParamhalf2 = 0;
+  var fifthParamhalf2 = 0;
+
+  var fps = 20;
+  var fpsInterval = 1000 / fps;
+  var now, previous, startTime;
+  var running = false;
+  var frameCounter = 0;
+  var mouthOpen = true;
+  var keyPress = false;
+  var direction = -1;
+  var mouthspeed = 3;
+  var speed = 5;
+  var edgeTolerance = 5;
+  var hitEdgeDir = -1;
+  var normFactor = 500;
+  var mazeWidth;
+
+  var path2 = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  // var path3 = document.createElementNS("http://www.w3.org/2000/svg", "path");
+
+  var doneone_svg = false;
+  var polylineShape;
+  var inputPointsArray = [0, 0, 0, 500, 100, 500, 100, 0, 0, 0];
+  var pointsArray = [];
+  var dotPosArray = [];
+  
+
+  resize_window();
+
+  generatePoints(3);
+  createPacman();
+
+  function generatePoints(direction) {
+    switch (direction) {
+      //down
+      case 1:
+        var p = svgElem.createSVGPoint();
+        p.x = cx;
+        p.y = cy - ry;
+
+        var theta = (120 * Math.PI) / 180;
+        var p2 = svgElem.createSVGPoint();
+        p2.x = cx + rx * Math.cos(theta);
+        p2.y = cy + ry * Math.sin(theta);
+
+        var p3 = svgElem.createSVGPoint();
+        p3.x = cx - rx * Math.cos(-theta);
+        p3.y = cy - ry * Math.sin(-theta);
+
+        fourthParamhalf1 = 0;
+        fourthParamhalf2 = 0;
+        fifthParamhalf1 = 0;
+        fifthParamhalf2 = 1;
+
+        break;
+      //up
+      case 2:
+        var p = svgElem.createSVGPoint();
+        p.x = cx;
+        p.y = cy + ry;
+
+        var theta = (120 * Math.PI) / 180;
+        var p2 = svgElem.createSVGPoint();
+        p2.x = cx - rx * Math.cos(theta);
+        p2.y = cy - ry * Math.sin(theta);
+
+        var p3 = svgElem.createSVGPoint();
+        p3.x = cx + rx * Math.cos(-theta);
+        p3.y = cy + ry * Math.sin(-theta);
+        fourthParamhalf1 = 0;
+        fourthParamhalf2 = 0;
+        fifthParamhalf1 = 0;
+        fifthParamhalf2 = 1;
+
+        break;
+      //left
+      case 3:
+        var p = svgElem.createSVGPoint();
+        p.x = cx + rx;
+        p.y = cy;
+
+        var theta = (150 * Math.PI) / 180;
+        var p2 = svgElem.createSVGPoint();
+        p2.x = cx + rx * Math.cos(theta);
+        p2.y = cy + ry * Math.sin(theta);
+
+        var p3 = svgElem.createSVGPoint();
+        p3.x = cx + rx * Math.cos(-theta);
+        p3.y = cy + ry * Math.sin(-theta);
+        fourthParamhalf1 = 0;
+        fourthParamhalf2 = 0;
+        fifthParamhalf1 = 1;
+        fifthParamhalf2 = 0;
+
+        break;
+      //right
+      case 4:
+        var p = svgElem.createSVGPoint();
+        p.x = cx - rx;
+        p.y = cy;
+
+        var theta = (150 * Math.PI) / 180;
+        var p2 = svgElem.createSVGPoint();
+        p2.x = cx - rx * Math.cos(theta);
+        p2.y = cy + ry * Math.sin(theta);
+
+        var p3 = svgElem.createSVGPoint();
+        p3.x = cx - rx * Math.cos(-theta);
+        p3.y = cy + ry * Math.sin(-theta);
+
+        fourthParamhalf1 = 0;
+        fourthParamhalf2 = 0;
+        fifthParamhalf1 = 0;
+        fifthParamhalf2 = 1;
+
+        break;
+
+      case 5:
+        var p = svgElem.createSVGPoint();
+        p.x = cx - rx;
+        p.y = cy;
+
+        var theta = (0.1 * Math.PI) / 180;
+        var p2 = svgElem.createSVGPoint();
+        p2.x = cx - rx * Math.cos(theta);
+        p2.y = cy + ry * Math.sin(theta);
+
+        var p3 = svgElem.createSVGPoint();
+        p3.x = cx - rx * Math.cos(-theta);
+        p3.y = cy + ry * Math.sin(-theta);
+
+        fourthParamhalf1 = 1;
+        fourthParamhalf2 = 0;
+        fifthParamhalf1 = 1;
+        fifthParamhalf2 = 1;
+        break;
+    }
+
+    arcParams = [
+      p.x,
+      p.y,
+      p2.x,
+      p2.y,
+      p3.x,
+      p3.y,
+      fourthParamhalf1,
+      fourthParamhalf2,
+      fifthParamhalf1,
+      fifthParamhalf2,
+    ];
+    return arcParams;
+  }
+
+  function createPacman() {
+    svgElem.appendChild(path);
+
+    var d =
+      "M" +
+      arcParams[0] +
+      " " +
+      arcParams[1] +
+      "A" +
+      rx +
+      " " +
+      ry +
+      " " +
+      "0" +
+      " " +
+      arcParams[6] +
+      " " +
+      arcParams[8] +
+      " " +
+      arcParams[2] +
+      " " +
+      arcParams[3] +
+      "L" +
+      cx +
+      " " +
+      cy +
+      "z";
+
+    path.setAttribute("d", d);
+    path.setAttribute("stroke", "yellow");
+    path.setAttribute("fill", "yellow");
+    path.setAttribute("stroke-width", 0);
+    path.setAttribute("opacity", 1);
+
+    
+                                   
+    svgElem.appendChild(path2);
+
+    d =
+      "M" +
+      arcParams[0] +
+      " " +
+      arcParams[1] +
+      "A" +
+      rx +
+      " " +
+      ry +
+      " " +
+      "0" +
+      " " +
+      arcParams[7] +
+      " " +
+      arcParams[9] +
+      " " +
+      arcParams[4] +
+      " " +
+      arcParams[5] +
+      "L" +
+      cx +
+      " " +
+      cy +
+      "z";
+    path2.setAttribute("d", d);
+    path2.setAttribute("stroke", "yellow");
+    path2.setAttribute("fill", "yellow");
+    path2.setAttribute("stroke-width", 0);
+    path2.setAttribute("opacity", 1);
+    //console.log(d);
+  }
+
+  function findNose() {
+    var dirObject = {
+      x: cx,
+      y: cy
+    }
+    switch (direction) {
+      case 1:
+        dirObject.y += ry;
+        break;
+
+      case 2:
+        dirObject.y += -ry;
+        break;
+
+      case 3:
+        dirObject.x += -rx;
+        break;
+
+      case 4:
+        dirObject.x += rx;
+        break;
+    }
+    return dirObject;
+  }
+
+  function animate_pacman() {
+    frameCounter++;
+
+    var checkIfHitAnything = checkEdge(findNose(), direction);
+
+    if (!running) {
+      hitEdgeDir = -1;
+      return
+    };
+
+    switch (direction) {
+      case 1:
+        arcParams[1] += speed;
+        cy += speed;
+
+        arcParams[3] += speed;
+
+        arcParams[5] += speed;
+
+        if (frameCounter % mouthspeed == 0) {
+          if (mouthOpen == false) {
+            generatePoints(1);
+            createPacman();
+            setTimeout(switchBoolean(), 20);
+          } else {
+            generatePoints(5);
+            createPacman();
+            setTimeout(switchBoolean(), 20);
+          }
+        } else {
+          if (mouthOpen == true) {
+            generatePoints(1);
+            createPacman();
+          } else {
+            generatePoints(5);
+            createPacman();
+          }
+        }
+
+        break;
+
+      case 2:
+        arcParams[1] -= speed;
+        cy -= speed;
+
+        arcParams[3] -= speed;
+
+        arcParams[5] -= speed;
+
+        if (frameCounter % mouthspeed == 0) {
+          if (mouthOpen == false) {
+            generatePoints(2);
+            createPacman();
+            setTimeout(switchBoolean(), 20);
+          } else {
+            generatePoints(5);
+            createPacman();
+            setTimeout(switchBoolean(), 20);
+          }
+        } else {
+          if (mouthOpen == true) {
+            generatePoints(2);
+            createPacman();
+          } else {
+            generatePoints(5);
+            createPacman();
+          }
+        }
+
+        break;
+
+      case 3:
+        arcParams[0] -= speed;
+        cx -= speed;
+
+        arcParams[2] -= speed;
+
+        arcParams[4] -= speed;
+
+        if (frameCounter % mouthspeed == 0) {
+          if (mouthOpen == false) {
+            generatePoints(3);
+            createPacman();
+            setTimeout(switchBoolean(), 20);
+          } else {
+            generatePoints(5);
+            createPacman();
+            setTimeout(switchBoolean(), 20);
+          }
+        } else {
+          if (mouthOpen == true) {
+            generatePoints(3);
+            createPacman();
+          } else {
+            generatePoints(5);
+            createPacman();
+          }
+        }
+
+        break;
+
+      case 4:
+        arcParams[0] += speed;
+        cx += speed;
+
+        arcParams[2] += speed;
+
+        arcParams[4] += speed;
+
+        if (frameCounter % mouthspeed == 0) {
+          if (mouthOpen == false) {
+            generatePoints(4);
+            createPacman();
+            setTimeout(switchBoolean(), 20);
+          } else {
+            generatePoints(5);
+            createPacman();
+            setTimeout(switchBoolean(), 20);
+          }
+        } else {
+          if (mouthOpen == true) {
+            generatePoints(4);
+            createPacman();
+          } else {
+            generatePoints(5);
+            createPacman();
+          }
+        }
+
+        break;
+    } //ends switch
+  } //ends animate pacman
+
+  function switchBoolean() {
+    mouthOpen = !mouthOpen;
+  }
+
+  var run = function () {
+
+    now = Date.now();
+    elapsed = now - previous;
+
+    if (!running) return;
+
+    if (elapsed > fpsInterval) {
+      previous = now - (elapsed % fpsInterval);
+
+      animate_pacman();
+    }
+
+    animation_request = window.requestAnimationFrame(function () {
+
+      run();
+    });
+  };
+
+  function polyLinePoints(array) {
+    //var stringArray = array.join();
+    //return stringArray;
+    console.log("motherdfffd", doneone_svg, mazeWidth);
+    pointsArray.length = 0;
+
+    var svg_array_string = "";
+    array.forEach((point) => {
+      svg_array_string += point / normFactor * mazeWidth + ",";
+      pointsArray.push(point / normFactor * mazeWidth);
+    });
+
+
+    return svg_array_string.substring(0, svg_array_string.length - 1);
+
+  }
+
+  function makeDotsArray() {
+
+    dotPosArray.length = 0;
+
+    for (i = 0; i <= 8; i++) {
+      switch (i) {
+        case 0: dotPosArray.push(pointsArray[i] + 20);
+          break;
+
+        case 1: dotPosArray.push(pointsArray[i] + 20);
+          break;
+
+        case 2: dotPosArray.push(pointsArray[i] + 20);
+          break;
+
+        case 3: dotPosArray.push(pointsArray[i] - 40);
+          break;
+
+        case 4: dotPosArray.push(pointsArray[i] - 40);
+          break;
+
+        case 5: dotPosArray.push(pointsArray[i] - 40);
+          break;
+
+        case 6: dotPosArray.push(pointsArray[i] - 40);
+          break;
+
+        case 7: dotPosArray.push(pointsArray[i] + 20);
+          break;
+
+      }
+    }
+  }
+
+  function resize_window() {
+
+    svgwidth = window.innerWidth;
+    svgheight = window.innerHeight;
+
+    mazeWidth = svgheight - 20;
+    cx = mazeWidth * .5 / 5;
+    cy = mazeWidth * .5;
+
+    const svg = document.getElementById("pacman");
+    var body = document.getElementById("body");
+
+    var bodyDivHeight = window.innerHeight - 20;
+    var bodyDivWidth  = window.innerWidth - pointsArray[4];
+
+    var old_svgwidth  = svgwidth;
+    var old_svgheight = svgheight;
+
+    svg.setAttribute("width", svgwidth);
+    svg.setAttribute("height", svgheight);
+    svg.setAttribute("viewbox", "0 0 " + svgwidth + " " + svgheight);
+
+    //move the pacman to the proportional spot on the new window
+    //not sure if this is good or not
+    //cx = (cx / old_svgwidth) * svgwidth;
+    //cy = (cy / old_svgheight) * svgheight + 20;
+
+    if (!doneone_svg) {
+
+      doneone_svg = true;
+      polylineShape = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+      polylineShape.setAttribute("fill", "none");
+      polylineShape.setAttribute("stroke", "blue");
+      polylineShape.setAttribute("stroke-width", "10");
+
+      console.log(doneone_svg, inputPointsArray);
+      polylineShape.setAttribute("points", polyLinePoints(inputPointsArray));
+      svgElem.appendChild(polylineShape);
+      var bodyDiv = document.createElement("div");
+      bodyDiv.id = "shoWork";
+      body.appendChild(bodyDiv);
+      
+      makeDotsArray();
+
+      for (i = 0; i < 4; i++) {
+        var dot = document.createElement("svg");
+        dot.id = i;
+        dot.style.top = dotPosArray[2 * i + 1];
+        dot.style.left = dotPosArray[2 * i];
+        dot.style.width = 20;
+        dot.style.height = 20;
+        dot.style.backgroundColor = "yellow";
+        dot.style.cssText += "position: absolute; z-index : 1";
+
+        body.appendChild(dot);
+      }
+    }
+  
+    else {
+
+        polylineShape.setAttribute("points", polyLinePoints(inputPointsArray));
+        bodyDiv = document.getElementById("shoWork");
+        
+        makeDotsArray();
+        
+        for (i = 0; i < 4; i++) {
+          dot = document.getElementById(i);
+          dot.style.top = dotPosArray[2 * i + 1];
+          dot.style.left = dotPosArray[2 * i];
+        }
+
+      }
+
+
+      bodyDiv.style.width = bodyDivWidth;
+      bodyDiv.style.height = bodyDivHeight;
+      bodyDiv.style.top = 0;
+      bodyDiv.style.left = pointsArray[4];
+      bodyDiv.style.backgroundColor = "none";
+      bodyDiv.style.cssText += "position: absolute";
+      console.log("window resized");
+
+    }
+
+    window.addEventListener("resize", resize_window);
+
+    function run_recording(direction) {
+      if (running == true) {
+
+      }
+
+      running = true;
+      previous = Date.now();
+      startTime = previous;
+
+      run();
+    }
+
+    window.addEventListener(
+      "keydown",
+      function (event) {
+        if (event.defaultPrevented) {
+          return; // Do nothing if the event was already processed
+        }
+
+        //console.log(event.key);
+
+        switch (event.key) {
+
+
+          case "ArrowDown":
+            // code for "down arrow" key press.
+
+            direction = 1;
+
+            break;
+          case "ArrowUp":
+            // code for "up arrow" key press.
+
+            direction = 2;
+
+            break;
+          case "ArrowLeft":
+            // code for "left arrow" key press.
+            direction = 3;
+
+            break;
+          case "ArrowRight":
+            // code for "right arrow" key press.
+
+            direction = 4;
+
+            break;
+          case "a":
+            running = false;
+            hitEdgeDir = -1;
+            //console.log("shit!!!!");
+            return;
+            break;
+
+          default:
+            return; // Quit when this doesn't handle the key event.
+        }
+
+
+        if (!running) run_recording();
+
+        // Cancel the default action to avoid it being handled twice
+        event.preventDefault();
+      },
+      true
+    );
+
+    //var pointsArray = [30, 20, 50, 20, 50, 10, 20, 10, 20, 25, 10, 25, 10, 100, 50, 100, 50, 90, 20, 90, 20, 70, 30, 70, 30, 80, 50, 80, 50, 60, 40, 60,
+    //  40, 70, 40, 60, 20, 60, 20, 50, 30, 50, 30, 40, 35, 40, 35, 50, 50, 50, 50, 20, 43, 20, 43, 30, 23, 30, 23, 40, 20, 40];
+    
+
+
+
+    function returnDotsPosition (arr) {
+      var xPos = [];
+      var yPos = [];
+      var dotPosObject = {}
+       for (i=0;i<4;i++){
+         xPos.push(dotPosArray[2*i]);
+         yPos.push(dotPosArray[2*i+1]);}
+
+      dotPosObject.x = xPos;
+      dotPosObject.y = yPos;
+
+      return dotPosObject;
+
+      
+    }
+
+    function comparePacandDotPos () {
+      var compareObject = {
+        hitpoint : false,
+        index : -1
+      }
+
+     for (i=0; i<4; i++)
+     if  (returnDotsPosition(dotPosArray).x[i] == cx || 
+          returnDotsPosition(dotPosArray).y[i]== cy ) 
+    {
+     compareObject.hitpoint = true;
+     compareObject.index = i;
+
+
+    }
+   return compareObject;
+  }
+
+    
+
+
+
+    function accessPoints(vertexNumber) {
+      return {
+        // x: (pointsArray[vertexNumber * 2] / 100) * svgwidth,
+        //y: (pointsArray[vertexNumber * 2 + 1] / 100) * svgheight
+        x: pointsArray[vertexNumber * 2],
+        y: pointsArray[vertexNumber * 2 + 1]
+      };
+
+
+    }
+
+    
+
+    function checkEdge(pacmansPosition, dir) {
+
+      var hitAnythingInfo = {
+        isAPoint : false,
+        isAWall : false,
+        pointNumber : -1,
+        running : false,
+        hitEdgeDir : -1
+
+      }
+
+      for (var i = 0; i < pointsArray.length / 2; i++) {
+        var v1 = accessPoints(i);
+        var v2 = accessPoints(i + 1);
+
+        if (hitEdge(pacmansPosition, dir, v1, v2) == true) {
+
+          if (hitEdgeDir > -1 && hitEdgeDir != dir) {
+            hitAnythingInfo.running = true;
+            running = true;
+            
+            hitAnythingInfo.hitEdgeDir = -1;
+            hitAnythingInfo.isAWall = true;
+            
+            return hitAnythingInfo;
+          }
+
+         hitAnythingInfo.hitEdgeDir = dir;
+         hitAnythingInfo.running = false;
+         
+         running = false;
+         hitEdgedir = dir;
+
+          return hitAnythingInfo;
+
+        }
+
+      
+
+
+
+      }
+
+    return true;
+
+    }
+    
+    function hitEdge(pacmansPosition, dir, v1, v2) {
+
+
+
+
+      if ((dir == 1 || dir == 2) && Math.abs(pacmansPosition.y - v1.y) < edgeTolerance &&
+        Math.abs(pacmansPosition.y - v2.y) < edgeTolerance) {
+        var left = v1.x;
+        var right = v2.x;
+
+        if (v1.x > v2.x) {
+          right = v1.x;
+          left = v2.x;
+        }
+
+        if (pacmansPosition.x >= left && pacmansPosition.x <= right) {
+          return true;
+
+        }
+
+      }
+
+      if ((dir == 3 || dir == 4) && Math.abs(pacmansPosition.x - v1.x) < edgeTolerance &&
+        Math.abs(pacmansPosition.x - v2.x) < edgeTolerance) {
+
+        //console.log("shit",v1,v2);
+        var up = v1.y;
+        var down = v2.y;
+
+        if (v1.y > v2.y) {
+          up = v2.y;
+          down = v1.y;
+        }
+
+
+        if (pacmansPosition.y >= up && pacmansPosition.y <= down) {
+
+          return true;
+
+        }
+
+
+      }
+
+      return false;
+    }
+
+</script>
+
+</html>
